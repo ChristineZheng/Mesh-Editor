@@ -1,0 +1,519 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>
+  body {
+    padding: 100px;
+    width: 800px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+    background-color: #EFBD64;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+  table {
+    font-family: arial, sans-serif;
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  td, th {
+      /*border: 1px solid #dddddd;*/
+      border: 1px solid #0b237c;
+      text-align: left;
+      padding: 8px;
+  }
+
+  tr:nth-child(even) {
+      background-color: #dddddd;
+  }
+</style>
+<title>CS 184 Mesh Editor</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2017</h1>
+<h1 align="middle">Project 2: Mesh Editor</h1>
+<h2 align="middle">Christine Guomin Zheng, CS184-aad</h2>
+
+<br><br>
+
+<div>
+    <tr>
+      <td>
+        <img src="cow.png" align="middle" width="800px"/>
+      </td>
+    </tr>
+</div>
+
+
+<div>
+
+<h2 align="middle">Overview</h2>
+<p> Mesh editing is my favorite project by far! Mesh is made up of many triangles that combined together. It is very amazing to explore how these tiny triangles oriented in different ways can make billions of things! Using halfedge data structure represetation and loop subdivision make it easier to smooth the meshes. I also learned some very cool shading and lighting effects.  </p>
+
+<br><br>
+
+<h2 align="middle">Section I: Bezier Curves and Surfaces</h2>
+
+<h3 align="middle">Part 1: Bezier curves with 1D de Casteljau subdivision</h3>
+
+<p> Bezier curves are created through the repeated interpolation of the given control points. The new point is calculated based on a parameter t (range from 0 to 1), which represents the ratio of how far the new point is away from the second point. I implemented the interpolation as <code> lerp(p_i, p_(i+1), t) = (1-t)p_i + tp_(i+1).</code> Below images show the steps from the original curve to a final smooth curve. </p>
+
+<h3 align="middle">Steps of the evaluation from the original control points down to the final evaluated point</h3>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="part1/curve 1.png" align="middle" width="250px"/>
+        <figcaption align="middle">Original</figcaption>
+      </td>
+      <td>
+        <img src="part1/curve 2.png" align="middle" width="250px"/>
+        <figcaption align="middle">Step 1</figcaption>
+      </td>
+      <td>
+        <img src="part1/curve 3.png" align="middle" width="250px"/>
+        <figcaption align="middle">Step 2</figcaption>
+      </td>
+    </tr>
+    <br>
+    <tr>
+      <td>
+        <img src="part1/curve 4.png" align="middle" width="250px"/>
+        <figcaption align="middle">Step 3</figcaption>
+      </td>
+      <td>
+        <img src="part1/curve 5.png" align="middle" width="250px"/>
+        <figcaption align="middle">Step 4</figcaption>
+      </td>
+      <td>
+        <img src="part1/curve 6.png" align="middle" width="250px"/>
+        <figcaption align="middle">Step 5</figcaption>
+      </td>
+    </tr>
+    <br>
+    <tr>
+      <td>
+        <img src="part1/curve 7.png" align="middle" width="250px"/>
+        <figcaption align="middle">Curve</figcaption>
+      </td>
+      <td>
+        <img src="part1/move vertex.png" align="middle" width="250px"/>
+        <figcaption align="middle">Move vertices to change the shape</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<!-- <p> modify the value of t by scrolling </p> -->
+<h3 align="middle">Modify the value of t by scrolling</h3>
+<div>
+  <table>
+    <tr>
+      <td>
+        <img src="part1/move t 1.png" align="middle" width="200px"/>
+        <figcaption align="middle">t1</figcaption>
+      </td>
+      <td>
+        <img src="part1/move t 2.png" align="middle" width="200px"/>
+        <figcaption align="middle">t2</figcaption>
+      </td>
+      <td>
+        <img src="part1/move t 3.png" align="middle" width="200px"/>
+        <figcaption align="middle">t3</figcaption>
+      </td>
+      <td>
+        <img src="part1/move t 4.png" align="middle" width="200px"/>
+        <figcaption align="middle">t4</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<br><br>
+
+<h3 align="middle">Part 2: Bezier surfaces with separable 1D de Casteljau subdivision</h3>
+
+<p> In part 2, De Casteljau's algorithm is extended to handle Bezier surfaces with two parameters u and v. For each row i of the controlpoints and given u, we can repeatly apply De Castaljau's algorithm to compute the final point <code>q_i(u)</code> for that Bezier curve. After going through all n rows of controlpoints, we get n points <code> q_1(u), q_2(u), ... q_n(u)</code>. Then we apply De Casteljau's algorithm to these control points again with parameter v to get the final point <code> p(u, v)</code> on the surface! </p>
+<p> I wrote another function called <code>deCasteljau</code> to get the final point from a row of the original controlpoints. I stored all the <code> q_i(u) </code> in a vector. At the end, I called function <code>deCasteljau</code> again on the new vector with parameter v to get the final point on the surface. </p>
+<div>
+  <table>
+    <tr>
+      <td>
+        <img src="part2/bezier surface.png" align="middle" width="800px"/>
+        <figcaption align="middle">Teapot</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<br><br>
+
+<h2 align="middle">Section II: Sampling</h2>
+
+<h3 align="middle">Part 3: Average normals for half-edge meshes</h3>
+
+<p> In part 3, we smooth out the teapot by taking the average of a vertex's normals. I first take the cross product of two edges for each triangle that the vertex is connected to. Then I add up all the cross products and compute the unit normal. I have also learned a lot about the halfedge data structure to handle the triangle meshes. At the beginning, my teapot didn't look right. I found out I used the wrong vertex. I also learned about do while loop which helps me to iterate all the neighboring halfedges without repeating them. </p>
+<div>
+  <table>
+    <tr>
+      <td>
+        <img src="part3/no smooth.png" align="middle" width="800px"/>
+        <figcaption align="middle">No smooth</figcaption>
+      </td>
+    </tr>
+    <br>
+    <tr>
+      <td>
+        <img src="part3/smooth.png" align="middle" width="800px"/>
+        <figcaption align="middle">Smooth</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+
+<br><br>
+<h3 align="middle">Part 4: Half-edge flip</h3>
+
+<p> In part 4, I flip the edges of the mesh by reassigning the pointers of edge, halfedge, vertex, and face. I start to get more comfortable traversing all the pointers in mesh. Drawing out the pointers helps me a lot to visualize how the pointers get changed and avoid mistakenly assigning a wrong pointer. </p>
+
+<p> I started with reassigning the pointers that were necessary to perform the flip operation. However, I then realized a lot of pointers needed to be changed. In order to avoid a long journey of debugging, I decided to assign all the pointers associated with the below flip diagram. For each halfedge, I updated its next, twin, vertex, edge, face. I also updated the halfedge of vertices, edges, and faces. </p>
+
+<div>
+  <table>
+    <tr>
+      <td>
+        <img src="part4/flip diagram.png" align="right" width="700px"/>
+        <figcaption align="middle">Flip Diagram</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div>
+  <table>
+    <tr>
+      <td>
+        <img src="part4/no flip.png" align="middle" width="800px"/>
+        <figcaption align="middle">No flip</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<h3 align="middle">Look how the edges in the above teapot get flipped</h3>
+<div>
+  <table>
+    <tr>
+      <td>
+        <img src="part4/flip.png" align="middle" width="800px"/>
+        <figcaption align="middle">Flip</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<br><br>
+<h3 align="middle">Part 5: Half-edge split</h3>
+
+<p> Similar to paty 4, I also assigned all the edges, verteices, faces, and halfedges. The big difference in split compared to flip is that I need to allocate 3 new edges, 2 new faces, 1 new vertex, and 6 new halfedges. Again drawing it out helped me a lot to avoid mistakenly assigning the wrong pointers. I used below split diagram to implement split. </p>
+<p> I first calculated the midpoint position by averaging the positions of two vertices along the edge that is splited. After that, I created all the new objects. I then started on the crazy amount of pointer assignments. By following the rules on the given resources, I was lucky that it works as I expected. For the pointers that aren't needed to be changed, I just assigned them their original pointers. But it did take me a while to double check all the pointers. </p>
+
+<div>
+  <table>
+    <tr>
+      <td>
+        <img src="part5/split_diagram.png" align="middle" width="800px"/>
+        <figcaption align="middle">Split diagram</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<br><br>
+
+<div>
+  <table>
+    <tr>
+      <td>
+        <img src="part5/no split.png" align="right" width="800px"/>
+        <figcaption align="middle">No Split</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<p align="middle">I randomly split some edges! </p>
+<div>
+  <table>
+    <tr>
+      <td>
+        <img src="part5/split.png" align="right" width="800px"/>
+        <figcaption align="middle">Split</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<br><br>
+<h3 align="middle">I then played around with split and flip</h3>
+<div>
+  <table>
+    <tr>
+      <td>
+        <img src="part5/no split or flip.png" align="right" width="800px"/>
+        <figcaption align="middle">No Split or Flip</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<p align="middle"> I had so much fun playing with split and flip LOL</p>
+<div>
+  <table>
+    <tr>
+      <td>
+        <img src="part5/split and flip.png" align="right" width="800px"/>
+        <figcaption align="middle">Split and flip</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<br><br>
+
+
+
+<h3 align="middle">Part 6: Loop subdivision for mesh upsampling</h3>
+
+<p> Loop subdivision is a great way to smooth meshes, especially sharp corners and edges. I calculated and stored the new positions of all vertices from the original mesh. I also calculated the positions of the new vertices and stored them in <code> e->newPosition </code>. Next, I splited the old edges using the splitEdge function from part 5 and update the new vertices' position as well. After that, I flipped the edges that connected to an old and new vertex using the flip function from part 4. Lastly, I updated the positoin for all the vertices. </p>
+
+<p> I spent most of the time on this part for debugging. Interestingly, I found two major errors that messed up my mesh.</p> 
+<p> #1. First, when I calculated the u, v values, I set their types as double. However, I set the value of u to <code>3/16</code>, which is not a double but an integer. After fixing it, my mesh doesn't look super weird. But it still doesn't look what I expected. </p>
+
+<p> #2. After spending a long time and going to office hour, I finally found that I did not set the orginal edges as "old" edges! I set the original vertices as "old", but I forgot to do so for old edges! What a pain! It fixed all the bugs. Because each time when I press u key, the whole mesh is subdivided once and all the edges and vertices from the original mesh will become "old". Labeling is very important dealing with meshes. </p>
+
+<h3 align="middle"> Comparison of Loop subdivision with and without pre-processing </h3>
+<table>
+  <tr>
+    <th>No Pre-processing</th>
+    <th>Split all edges</th>
+  </tr>
+  <tr>
+    <td>
+      <img src="part6/no preprocessing/original.png" align="right" width="400px"/>
+      <figcaption align="middle">Split and flip</figcaption>
+    </td>
+    <td>
+      <img src="part6/split all edges/split all edges1.png" align="right" width="400px"/>
+      <figcaption align="middle">Split and flip</figcaption>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <img src="part6/no preprocessing/1.png" align="right" width="400px"/>
+      <figcaption align="middle">Split and flip</figcaption>
+    </td>
+    <td>
+      <img src="part6/split all edges/split all edges2.png" align="right" width="400px"/>
+      <figcaption align="middle">Split and flip</figcaption>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <img src="part6/no preprocessing/2.png" align="right" width="400px"/>
+      <figcaption align="middle">Split and flip</figcaption>
+    </td>
+    <td>
+      <img src="part6/split all edges/split all edges3.png" align="right" width="400px"/>
+      <figcaption align="middle">Split and flip</figcaption>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <img src="part6/no preprocessing/3.png" align="right" width="400px"/>
+      <figcaption align="middle">Split and flip</figcaption>
+    </td>
+    <td>
+      <img src="part6/split all edges/split all edges4.png" align="right" width="400px"/>
+      <figcaption align="middle">Split and flip</figcaption>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <img src="part6/no preprocessing/4.png" align="right" width="400px"/>
+      <figcaption align="middle">Split and flip</figcaption>
+    </td>
+    <td>
+      <img src="part6/split all edges/split all edges5.png" align="right" width="400px"/>
+      <figcaption align="middle">Split and flip</figcaption>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <img src="part6/no preprocessing/5.png" align="right" width="400px"/>
+      <figcaption align="middle">Split and flip</figcaption>
+    </td>
+    <td>
+      <img src="part6/split all edges/split all edges6.png" align="right" width="400px"/>
+      <figcaption align="middle">Split and flip</figcaption>
+    </td>
+  </tr>
+</table>
+
+<p> After spliting all the edges in the original mesh, the final subdivision mesh looks more evenly spread and forms a rounded square compared to the non-preprocessing mesh subdivision. This is because the original mesh was asymmetric. Pre-spliting can smooth the sharp corners and edges. So the non pre-spliting mesh turns out look more pointier after subdivision.  </p>
+
+<br><br>
+<h3 align="middle">I also tried other combination! I tried to make a owl... See the one on the right.</h3>
+<table>
+  <tr>
+    <th>Flip two edges</th>
+    <th>Split on an angle</th>
+  </tr>
+  <tr>
+    <td>
+      <img src="part6/flip two edges/triangle1.png" align="right" width="400px"/>
+      <figcaption align="middle">Split and flip</figcaption>
+    </td>
+    <td>
+      <img src="part6/split on an angle/owl.png" align="right" width="400px"/>
+      <figcaption align="middle">Split and flip</figcaption>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <img src="part6/flip two edges/triangle2.png" align="right" width="400px"/>
+      <figcaption align="middle">Split and flip</figcaption>
+    </td>
+    <td>
+      <img src="part6/split on an angle/owl1.png" align="right" width="400px"/>
+      <figcaption align="middle">Split and flip</figcaption>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <img src="part6/flip two edges/triangle3.png" align="right" width="400px"/>
+      <figcaption align="middle">Split and flip</figcaption>
+    </td>
+    <td>
+      <img src="part6/split on an angle/owl2.png" align="right" width="400px"/>
+      <figcaption align="middle">Split and flip</figcaption>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <img src="part6/flip two edges/triangle4.png" align="right" width="400px"/>
+      <figcaption align="middle">Split and flip</figcaption>
+    </td>
+    <td>
+      <img src="part6/split on an angle/owl3.png" align="right" width="400px"/>
+      <figcaption align="middle">Split and flip</figcaption>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <img src="part6/flip two edges/triangle5.png" align="right" width="400px"/>
+      <figcaption align="middle">Split and flip</figcaption>
+    </td>
+    <td>
+      <img src="part6/split on an angle/owl4.png" align="right" width="400px"/>
+      <figcaption align="middle">Split and flip</figcaption>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <img src="part6/flip two edges/triangle6.png" align="right" width="400px"/>
+      <figcaption align="middle">Split and flip</figcaption>
+    </td>
+    <td>
+      <img src="part6/split on an angle/owl5.png" align="right" width="400px"/>
+      <figcaption align="middle">Split and flip</figcaption>
+    </td>
+  </tr>
+</table>
+<p> Pre-spliting around a vertex produces a more pointier mesh after subdivision. Using the combination of split and flip, we can create weird object, for example the kinda like owl object on the right. </p>
+
+<br><br>
+<h3 align="middle">Torus</h3>
+<div>
+  <table>
+    <tr>
+      <td>
+        <img src="part6/torus/torus1.png" align="middle" width="400px"/>
+      </td>
+      <td>
+        <img src="part6/torus/torus2.png" align="middle" width="400px"/>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<br><br>
+
+<div>
+  <table>
+    <tr>
+      <td>
+        <img src="part6/beetle.png" align="right" width="600px"/>
+        <figcaption align="middle">Beetle - Phong shading</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<br><br>
+
+<h2 align="middle">Section III: Shaders</h2>
+
+<h3 align="middle">Part 7: Fun with shaders</h3>
+<h3 align="middle"> For this part, I implemented Phong shader</h3>
+
+<div>
+  <table>
+    <tr>
+      <td>
+        <img src="part7/teapot.png" align="right" width="600px"/>
+        <figcaption align="middle">Teapot - Phong shading</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div>
+  <table>
+    <tr>
+      <td>
+        <img src="part7/maxplanck.png" align="right" width="600px"/>
+        <figcaption align="middle">Maxplanck - Phong shading</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div>
+  <table>
+    <tr>
+      <td>
+        <img src="part7/armadillo.png" align="right" width="600px"/>
+        <figcaption align="middle">Armadillo - Phong shading</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+
+
+<h2 align="middle">Section IV: Mesh Competition</h2>
+
+
+<h3 align="middle">Part 8: Design your own mesh!</h3>
+
+</body>
+</html>
